@@ -3,7 +3,7 @@ import DrawingCanvas from './components/DrawingCanvas';
 
 const App: React.FC = () => {
     // Define the drawing state to control UI components
-    const [, setIsDrawing] = useState<boolean>(false);
+    const [ ,setIsDrawing] = useState<boolean>(false);
 
     return (
         <div>

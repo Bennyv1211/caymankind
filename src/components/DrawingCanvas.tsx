@@ -11,16 +11,21 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ isAdmin }) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
     const [isDrawing, setIsDrawing] = useState(false);
-    const [timer, setTimer] = useState<number | null>(null);
-    const [color, setColor] = useState('black');
+    const [timer, setTimer] = useState<number | null>(120);
+    const [color, setColor] = useState('#000000');
     const [lineWidth, setLineWidth] = useState(2);
     const [isEraser, setIsEraser] = useState(false);
-    const [adminLoggedIn, setAdminLoggedIn] = useState(isAdmin);
+    const [adminLoggedIn, setAdminLoggedIn] = useState<boolean>(isAdmin ? true : false);
     const [showAdminLogin, setShowAdminLogin] = useState(false);
     const [userDrawingAllowed, setUserDrawingAllowed] = useState(true);
     const [textMode, setTextMode] = useState(false);
     const [textInput, setTextInput] = useState('');
     const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
+    useEffect(() => {
+        console.log('Admin Logged In:', adminLoggedIn);
+        console.log('Show Admin Login:', showAdminLogin);
+    }, [adminLoggedIn, showAdminLogin]);
 
     useEffect(() => {
         const canvas = canvasRef.current!;
@@ -105,7 +110,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ isAdmin }) => {
 
         ctx.lineWidth = lineWidth;
         ctx.lineCap = 'round';
-        ctx.strokeStyle = isEraser ? 'white' : color;
+        ctx.strokeStyle = isEraser ? '#ffffff' : color;
 
         ctx.lineTo(offsetX, offsetY);
         ctx.stroke();
@@ -167,7 +172,6 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ isAdmin }) => {
 
     const closeWelcomeModal = () => {
         setShowWelcomeModal(false);
-        setTimer(120);
     };
 
     return (
@@ -176,6 +180,56 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ isAdmin }) => {
 
             {!adminLoggedIn && timer !== null && <p>Time Left: {timer} seconds</p>}
             {!adminLoggedIn && timer === null && <p>Your time is up! Thank you for participating.</p>}
+
+            {/* Buttons and Tools Centered at the Top */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '10px' }}>
+                {/* Combined User and Admin Tools (Visible to Everyone) */}
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <label>
+                        Color:
+                        <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+                    </label>
+                    <label>
+                        Line Size:
+                        <input
+                            type="range"
+                            min="1"
+                            max="3"
+                            value={lineWidth}
+                            onChange={(e) => setLineWidth(Math.min(Number(e.target.value), 3))}
+                        />
+                    </label>
+                    <label>
+                        Text:
+                        <input
+                            type="text"
+                            value={textInput}
+                            onChange={(e) => setTextInput(e.target.value)}
+                            placeholder="Type your text here"
+                        />
+                    </label>
+                    <button onClick={() => setTextMode(true)}>Place Text</button>
+
+                    {adminLoggedIn ? (
+                        <>
+                            <button onClick={downloadCanvasAsJPEG}>Download as JPEG</button>
+                            <button onClick={clearCanvas}>Clear Canvas</button>
+                            <button onClick={() => setIsEraser(!isEraser)}>
+                                {isEraser ? 'Switch to Pen' : 'Eraser'}
+                            </button>
+                            <button onClick={() => setAdminLoggedIn(false)}>Logout</button>
+                        </>
+                    ) : (
+                        <button onClick={() => setShowAdminLogin(true)}>Admin Login</button>
+                    )}
+                </div>
+            </div>
+
+            {showAdminLogin && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '10px' }}>
+                    <AdminLogin onLogin={handleAdminLogin} onClose={() => setShowAdminLogin(false)} />
+                </div>
+            )}
 
             {showWelcomeModal && (
                 <div style={{
@@ -220,67 +274,18 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ isAdmin }) => {
 
             <canvas
                 ref={canvasRef}
-                width={6000}
-                height={5000}
+                width={3500}
+                height={6000}
                 onMouseDown={startDrawing}
                 onMouseUp={stopDrawing}
                 onMouseMove={draw}
                 style={{ border: '1px solid black', backgroundColor: '#ffffff' }}
             ></canvas>
 
-            {/* User Tools (Visible to Everyone) */}
+            {/* Fallback UI for Debugging */}
             <div>
-                <label>
-                    Color:
-                    <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
-                </label>
-                <label>
-                    Line Size:
-                    <input
-                        type="range"
-                        min="1"
-                        max="3"
-                        value={lineWidth}
-                        onChange={(e) => setLineWidth(Math.min(Number(e.target.value), 3))}
-                    />
-                </label>
+                {adminLoggedIn ? <p>Admin is logged in!</p> : <p>Standard user mode.</p>}
             </div>
-
-            <div>
-                <label>
-                    Text:
-                    <input
-                        type="text"
-                        value={textInput}
-                        onChange={(e) => setTextInput(e.target.value)}
-                        placeholder="Type your text here"
-                    />
-                </label>
-                <button onClick={() => setTextMode(true)}>Place Text</button>
-            </div>
-
-            {/* Admin Tools (Only for Admin) */}
-            {adminLoggedIn && (
-                <div>
-                    <h3>Admin Tools</h3>
-                    <button onClick={downloadCanvasAsJPEG}>Download as JPEG</button>
-                    <button onClick={clearCanvas}>Clear Canvas</button>
-                    <button onClick={() => setIsEraser(!isEraser)}>
-                        {isEraser ? 'Switch to Pen' : 'Eraser'}
-                    </button>
-                    <button onClick={() => setAdminLoggedIn(false)}>Logout</button>
-                </div>
-            )}
-
-            {/* Admin Login Button (Visible to All Users) */}
-            {!adminLoggedIn && (
-                <button style={{ marginTop: '20px' }} onClick={() => setShowAdminLogin(true)}>
-                    Admin Login
-                </button>
-            )}
-
-            {/* Admin Login Modal */}
-            {showAdminLogin && <AdminLogin onLogin={handleAdminLogin} onClose={() => setShowAdminLogin(false)} />}
         </div>
     );
 };

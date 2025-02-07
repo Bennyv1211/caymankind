@@ -16,9 +16,14 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose }) => {
             await signInWithEmailAndPassword(auth, email, password);
             onLogin(true);  // Call the onLogin function when successful
             onClose();  // Close the login modal
-        } catch (error: any) {
-            console.error("Login Error:", error.code, error.message);
-            setErrorMessage(`Error: ${error.code} - ${error.message}`);
+        } catch (error: unknown) {  // Changed from 'any' to 'unknown'
+            if (error instanceof Error) {
+                console.error("Login Error:", error.name, error.message);
+                setErrorMessage(`Error: ${error.name} - ${error.message}`);
+            } else {
+                console.error("An unexpected error occurred.");
+                setErrorMessage("An unexpected error occurred.");
+            }
         }
     };
 
