@@ -2,15 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import AdminLogin from './AdminLogin';
 import { db, setDoc, doc, getDoc } from '../firebase';
 
-interface Point {
-    x: number;
-    y: number;
-    color: string;
-    size: number;
-    isEraser: boolean;
+interface DrawingCanvasProps {
+    isAdmin: boolean;
+    setIsDrawing?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const DrawingCanvas: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
+const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ isAdmin }) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
     const [isDrawing, setIsDrawing] = useState(false);
@@ -30,7 +27,7 @@ const DrawingCanvas: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
         const ctx = canvas.getContext('2d')!;
         ctxRef.current = ctx;
 
-        async function loadDrawing() {
+        const loadDrawing = async () => {
             const docSnap = await getDoc(doc(db, 'drawings', 'current'));
             if (docSnap.exists()) {
                 const data = docSnap.data();
@@ -45,7 +42,7 @@ const DrawingCanvas: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                     };
                 }
             }
-        }
+        };
 
         loadDrawing();
 
@@ -54,7 +51,7 @@ const DrawingCanvas: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                 setShowWelcomeModal(true);
             }, 500);
         }
-    }, []);
+    }, [isAdmin]);
 
     useEffect(() => {
         if (timer !== null && !adminLoggedIn) {
@@ -77,7 +74,6 @@ const DrawingCanvas: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     useEffect(() => {
         const interval = setInterval(async () => {
             await saveDrawing();
-            await loadDrawing();
         }, 5000);
         return () => clearInterval(interval);
     }, []);
@@ -232,6 +228,7 @@ const DrawingCanvas: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                 style={{ border: '1px solid black', backgroundColor: '#ffffff' }}
             ></canvas>
 
+            {/* User Tools (Visible to Everyone) */}
             <div>
                 <label>
                     Color:
@@ -262,6 +259,7 @@ const DrawingCanvas: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                 <button onClick={() => setTextMode(true)}>Place Text</button>
             </div>
 
+            {/* Admin Tools (Only for Admin) */}
             {adminLoggedIn && (
                 <div>
                     <h3>Admin Tools</h3>
@@ -274,12 +272,14 @@ const DrawingCanvas: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
                 </div>
             )}
 
+            {/* Admin Login Button (Visible to All Users) */}
             {!adminLoggedIn && (
                 <button style={{ marginTop: '20px' }} onClick={() => setShowAdminLogin(true)}>
                     Admin Login
                 </button>
             )}
 
+            {/* Admin Login Modal */}
             {showAdminLogin && <AdminLogin onLogin={handleAdminLogin} onClose={() => setShowAdminLogin(false)} />}
         </div>
     );
